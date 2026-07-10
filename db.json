@@ -1,0 +1,374 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "username": "admin",
+      "password": "password",
+      "role": "Manager"
+    },
+    {
+      "id": 2,
+      "username": "kesara",
+      "password": "password",
+      "role": "Waiter"
+    }
+  ],
+  "dishes": [
+    {
+      "id": 1,
+      "name": "Espresso",
+      "category": "Drinks",
+      "orders": 124,
+      "price": 3.5,
+      "imageUrl": "https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=500&q=80"
+    },
+    {
+      "id": 2,
+      "name": "Avocado Toast",
+      "category": "Food",
+      "orders": 99,
+      "price": 8.5,
+      "imageUrl": "https://images.unsplash.com/photo-1541532713592-79a0317b6b77?w=500&q=80"
+    },
+    {
+      "id": 3,
+      "name": "Cappuccino",
+      "category": "Drinks",
+      "orders": 210,
+      "price": 4.5,
+      "imageUrl": "https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=500&q=80"
+    },
+    {
+      "id": 4,
+      "name": "Blueberry Muffin",
+      "category": "Food",
+      "orders": 85,
+      "price": 3,
+      "imageUrl": "https://images.unsplash.com/photo-1607958996333-41aef7caefaa?w=500&q=80"
+    },
+    {
+      "id": 5,
+      "name": "Latte",
+      "category": "Drinks",
+      "orders": 185,
+      "price": 4,
+      "imageUrl": "https://images.unsplash.com/photo-1497935586351-b67a49e012bf?w=500&q=80"
+    }
+  ],
+  "employees": [
+    {
+      "id": 1,
+      "name": "Kesara",
+      "role": "Waiter",
+      "earnings": 450,
+      "shiftDuration": "08:00 AM - 04:00 PM",
+      "avatarUrl": "https://i.pravatar.cc/100?img=1"
+    },
+    {
+      "id": 2,
+      "name": "Albert Flores",
+      "role": "Manager",
+      "earnings": 750,
+      "shiftDuration": "09:00 AM - 05:00 PM",
+      "avatarUrl": "https://i.pravatar.cc/100?img=11"
+    },
+    {
+      "id": 3,
+      "name": "Dianne Russell",
+      "role": "Courier",
+      "earnings": 320,
+      "shiftDuration": "10:00 AM - 06:00 PM",
+      "avatarUrl": "https://i.pravatar.cc/100?img=5"
+    }
+  ],
+  "sales": [
+    {
+      "id": 1,
+      "timeLabel": "09:00",
+      "amount": 45
+    },
+    {
+      "id": 2,
+      "timeLabel": "10:00",
+      "amount": 80
+    },
+    {
+      "id": 3,
+      "timeLabel": "11:00",
+      "amount": 110
+    },
+    {
+      "id": 4,
+      "timeLabel": "12:00",
+      "amount": 205
+    },
+    {
+      "id": 5,
+      "timeLabel": "13:00",
+      "amount": 180
+    },
+    {
+      "id": 6,
+      "timeLabel": "14:00",
+      "amount": 120
+    },
+    {
+      "id": 7,
+      "timeLabel": "15:00",
+      "amount": 90
+    },
+    {
+      "id": 8,
+      "timeLabel": "16:00",
+      "amount": 65
+    },
+    {
+      "id": 9,
+      "timeLabel": "17:00",
+      "amount": 130
+    },
+    {
+      "id": 10,
+      "timeLabel": "18:00",
+      "amount": 160
+    }
+  ],
+  "bills": [
+    {
+      "id": "ORD-1016",
+      "date": "2026-07-09",
+      "customer": "Takeaway",
+      "amount": 8.5,
+      "status": "Paid",
+      "items": [
+        {
+          "id": 2,
+          "name": "Avocado Toast",
+          "category": "Food",
+          "price": 8.5,
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "id": "ORD-1001",
+      "date": "2026-07-10",
+      "customer": "Table 4",
+      "amount": 45,
+      "status": "Paid",
+      "items": [
+        {
+          "id": 1,
+          "name": "Espresso",
+          "category": "Drinks",
+          "price": 3.5,
+          "quantity": 2
+        },
+        {
+          "id": 2,
+          "name": "Avocado Toast",
+          "category": "Food",
+          "price": 8.5,
+          "quantity": 2
+        }
+      ]
+    },
+    {
+      "id": "ORD-1002",
+      "date": "2026-07-10",
+      "customer": "Takeaway",
+      "amount": 18.5,
+      "status": "Paid",
+      "items": [
+        {
+          "id": 3,
+          "name": "Cappuccino",
+          "category": "Drinks",
+          "price": 4.5,
+          "quantity": 2
+        },
+        {
+          "id": 4,
+          "name": "Blueberry Muffin",
+          "category": "Food",
+          "price": 3,
+          "quantity": 3
+        }
+      ]
+    },
+    {
+      "id": "ORD-1003",
+      "date": "2026-07-10",
+      "customer": "Table 1",
+      "amount": 120,
+      "status": "Pending",
+      "items": [
+        {
+          "id": 5,
+          "name": "Latte",
+          "category": "Drinks",
+          "price": 4,
+          "quantity": 5
+        },
+        {
+          "id": 2,
+          "name": "Avocado Toast",
+          "category": "Food",
+          "price": 8.5,
+          "quantity": 6
+        }
+      ]
+    },
+    {
+      "id": "ORD-1004",
+      "date": "2026-07-10",
+      "customer": "Table 7",
+      "amount": 24,
+      "status": "Paid",
+      "items": [
+        {
+          "id": 1,
+          "name": "Espresso",
+          "category": "Drinks",
+          "price": 3.5,
+          "quantity": 4
+        },
+        {
+          "id": 4,
+          "name": "Blueberry Muffin",
+          "category": "Food",
+          "price": 3,
+          "quantity": 3
+        }
+      ]
+    },
+    {
+      "id": "ORD-0999",
+      "date": "2026-07-09",
+      "customer": "Table 2",
+      "amount": 35,
+      "status": "Paid",
+      "items": [
+        {
+          "id": 1,
+          "name": "Espresso",
+          "category": "Drinks",
+          "price": 3.5,
+          "quantity": 10
+        }
+      ]
+    },
+    {
+      "id": "ORD-0998",
+      "date": "2026-07-09",
+      "customer": "Takeaway",
+      "amount": 55.5,
+      "status": "Paid",
+      "items": [
+        {
+          "id": 2,
+          "name": "Avocado Toast",
+          "category": "Food",
+          "price": 8.5,
+          "quantity": 5
+        },
+        {
+          "id": 3,
+          "name": "Cappuccino",
+          "category": "Drinks",
+          "price": 4.5,
+          "quantity": 3
+        }
+      ]
+    },
+    {
+      "id": "ORD-0997",
+      "date": "2026-07-07",
+      "customer": "Table 5",
+      "amount": 80,
+      "status": "Paid"
+    },
+    {
+      "id": "ORD-0996",
+      "date": "2026-07-06",
+      "customer": "Table 1",
+      "amount": 110,
+      "status": "Paid"
+    },
+    {
+      "id": "ORD-0995",
+      "date": "2026-07-05",
+      "customer": "Takeaway",
+      "amount": 45,
+      "status": "Paid"
+    },
+    {
+      "id": "ORD-0994",
+      "date": "2026-06-28",
+      "customer": "Table 3",
+      "amount": 95,
+      "status": "Paid"
+    },
+    {
+      "id": "ORD-0993",
+      "date": "2026-06-25",
+      "customer": "Table 4",
+      "amount": 150,
+      "status": "Paid"
+    },
+    {
+      "id": "ORD-0992",
+      "date": "2026-06-15",
+      "customer": "Table 2",
+      "amount": 70,
+      "status": "Paid"
+    },
+    {
+      "id": "ORD-0991",
+      "date": "2026-05-10",
+      "customer": "Table 1",
+      "amount": 320,
+      "status": "Paid"
+    },
+    {
+      "id": "ORD-0990",
+      "date": "2026-04-12",
+      "customer": "Table 5",
+      "amount": 410,
+      "status": "Paid"
+    },
+    {
+      "id": "ORD-0889",
+      "date": "2026-03-22",
+      "customer": "Table 3",
+      "amount": 180,
+      "status": "Paid"
+    }
+  ],
+  "messages": [
+    {
+      "id": 1,
+      "title": "Low Stock Alert",
+      "text": "Coffee beans running low in storage.",
+      "time": "10 mins ago",
+      "type": "warning"
+    },
+    {
+      "id": 2,
+      "title": "Shift Updated",
+      "text": "Your shift tomorrow has been changed to 09:00 AM.",
+      "time": "2 hours ago",
+      "type": "info"
+    }
+  ],
+  "summary": {
+    "totalIncome": 77549.5,
+    "foodIncome": 35008.5,
+    "drinksIncome": 38541,
+    "othersIncome": 4000,
+    "totalOrders": 21376,
+    "ordersGrowth": -2.33,
+    "newCustomers": 256,
+    "customersGrowth": 32.4
+  }
+}

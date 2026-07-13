@@ -58,22 +58,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 1. Populate Profile
     const user = JSON.parse(localStorage.getItem('user'));
-    // Find employee info from DB to show proper details
-    const employee = data.employees.find(e => e.name.toLowerCase().includes(user.username.toLowerCase()) || e.role === user.role);
-    
+    // Find employee info from DB to show proper details (match on username only —
+    // matching by role too would attribute a random employee's data to this account)
+    const employee = data.employees.find(e => e.name.toLowerCase().split(' ')[0] === user.username.toLowerCase());
+
+    const defaultAvatar = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%239ca3af"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>';
+
+    const settingsName = document.getElementById('settings-name');
+    const settingsRole = document.getElementById('settings-role');
+
     if (employee) {
       document.getElementById('profile-name').textContent = employee.name;
       document.getElementById('profile-role').textContent = `${employee.role} • ${employee.shiftDuration}`;
-      document.getElementById('profile-avatar').src = employee.avatarUrl;
+      document.getElementById('profile-avatar').src = employee.avatarUrl || defaultAvatar;
 
       // Prefill Settings
-      const settingsName = document.getElementById('settings-name');
-      const settingsRole = document.getElementById('settings-role');
       if (settingsName) settingsName.value = employee.name;
-      if (settingsRole) settingsRole.value = employee.role;
+      if (settingsRole) { settingsRole.value = employee.role; settingsRole.disabled = false; }
     } else {
       document.getElementById('profile-name').textContent = user.username;
       document.getElementById('profile-role').textContent = user.role;
+      document.getElementById('profile-avatar').src = defaultAvatar;
+
+      // No linked employee record — show the account's own username/role.
+      // Role is read-only here: system role changes belong in Role Management, not self-service Settings.
+      if (settingsName) settingsName.value = user.username;
+      if (settingsRole) { settingsRole.value = user.role; settingsRole.disabled = true; }
     }
 
     // 2. Populate Summary Cards
@@ -97,6 +107,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 5. Render New Views
     renderNewViews(data);
+
+    // 6. Apply Role-Based Permissions
+    applyRolePermissions(user.role);
   }
 
   function renderDishesTable(dishes) {
@@ -123,8 +136,127 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // -- Role-Based Access Control --
+  function applyRolePermissions(role) {
+    // Role badge config
+    const badgeConfig = {
+      'Admin':       { text: 'Admin',        cls: 'role-admin' },
+      'StockKeeper': { text: 'Stock Keeper',  cls: 'role-stock' },
+      'Cashier':     { text: 'Cashier',       cls: 'role-cashier' }
+    };
+    const cfg = badgeConfig[role] || { text: role, cls: 'role-admin' };
+    const badgeEl = document.getElementById('sidebar-role-badge');
+    if (badgeEl) {
+      badgeEl.textContent = cfg.text;
+      badgeEl.className = `sidebar-role-badge role-badge ${cfg.cls}`;
+    }
+
+    // Define which nav items are visible per role
+    const navVisibility = {
+      'Admin': {
+        'nav-dashboard': true, 'nav-food-drinks': true, 'nav-stock': true,
+        'nav-messages': true, 'nav-bills': true, 'nav-settings': true,
+        'nav-notifications': true, 'nav-support': true, 'nav-users': true
+      },
+      'StockKeeper': {
+        'nav-dashboard': false, 'nav-food-drinks': false, 'nav-stock': true,
+        'nav-messages': true, 'nav-bills': false, 'nav-settings': true,
+        'nav-notifications': true, 'nav-support': true, 'nav-users': false
+      },
+      'Cashier': {
+        'nav-dashboard': false, 'nav-food-drinks': true, 'nav-stock': false,
+        'nav-messages': true, 'nav-bills': true, 'nav-settings': true,
+        'nav-notifications': true, 'nav-support': true, 'nav-users': false
+      }
+    };
+
+    const visibility = navVisibility[role] || navVisibility['Admin'];
+    Object.entries(visibility).forEach(([id, visible]) => {
+      const el = document.getElementById(id);
+      if (el) el.classList.toggle('hidden', !visible);
+    });
+
+    // Show/hide 'Add New Item' button based on role
+    const addItemBtn = document.getElementById('add-item-btn');
+    const addItemBtnStock = document.getElementById('add-item-btn-stock');
+    if (addItemBtn) addItemBtn.classList.toggle('hidden', role === 'Cashier');
+    if (addItemBtnStock) addItemBtnStock.classList.toggle('hidden', role === 'Cashier');
+
+    // Navigate to default view per role
+    if (role === 'StockKeeper') {
+      switchView('stock', 'Stock Management');
+      renderStockTable(dashboardData ? dashboardData.dishes : []);
+    } else if (role === 'Cashier') {
+      switchView('food-drinks', 'Food & Drinks');
+    } else {
+      // Admin – stay on dashboard (already active)
+    }
+  }
+
+  // -- Stock Table Rendering (Stock Keeper Portal) --
+  function renderStockTable(dishes) {
+    const tbody = document.getElementById('stock-table-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    dishes.forEach(dish => {
+      const tagClass = dish.category === 'Food' ? 'tag-food' : (dish.category === 'Drinks' ? 'tag-drinks' : 'tag-other');
+      const stockVal = dish.stock !== undefined ? dish.stock : '-';
+      const tr = document.createElement('tr');
+      tr.id = `stock-row-${dish.id}`;
+      tr.innerHTML = `
+        <td>
+          <div class="item-row">
+            <img src="${dish.imageUrl}" alt="${dish.name}" class="item-image">
+            <span class="item-name">${dish.name}</span>
+          </div>
+        </td>
+        <td><span class="category-tag ${tagClass}">${dish.category}</span></td>
+        <td><input type="number" step="0.01" min="0" class="stock-input" id="price-input-${dish.id}" value="${Number(dish.price || 0).toFixed(2)}"></td>
+        <td><input type="number" step="1" min="0" class="stock-input" id="stock-input-${dish.id}" value="${stockVal === '-' ? 0 : stockVal}"></td>
+        <td>
+          <button class="btn-outline" style="padding: 0.35rem 0.6rem; margin-right: 0.5rem;" onclick="window.openEditModal(${dish.id})">
+            <i class="fa-solid fa-pen"></i> Edit
+          </button>
+          <button class="btn-save-stock" onclick="window.saveStockRow(${dish.id})">
+            <i class="fa-solid fa-floppy-disk"></i> Save
+          </button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  window.saveStockRow = async function(dishId) {
+    const priceInput = document.getElementById(`price-input-${dishId}`);
+    const stockInput = document.getElementById(`stock-input-${dishId}`);
+    if (!priceInput || !stockInput) return;
+    const result = await API.updateDish(dishId, {
+      price: priceInput.value,
+      stock: stockInput.value
+    });
+    if (result.success) {
+      const btn = document.querySelector(`#stock-row-${dishId} .btn-save-stock`);
+      if (btn) {
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Saved!';
+        btn.style.background = '#10B981';
+        setTimeout(() => {
+          btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save';
+          btn.style.background = '';
+        }, 1800);
+      }
+      // Update local dashboardData as well
+      if (dashboardData) {
+        const d = dashboardData.dishes.find(d => d.id === dishId);
+        if (d) { d.price = Number(priceInput.value); d.stock = Number(stockInput.value); }
+      }
+    } else {
+      alert('Failed to save: ' + result.message);
+    }
+  };
+
   function renderEmployeesTable(employees) {
     const tbody = document.querySelector('#employees-table tbody');
+    if (!tbody) return;
     tbody.innerHTML = '';
     
     // Sort by earnings desc
@@ -319,11 +451,43 @@ document.addEventListener('DOMContentLoaded', () => {
       title = title.trim();
       
       switchView(viewId, title);
+
+      // If navigating to stock view, refresh the stock table
+      if (viewId === 'stock' && dashboardData) {
+        renderStockTable(dashboardData.dishes);
+      }
+
+      closeMobileSidebar();
     });
   });
 
+  // -- Mobile Sidebar Drawer --
+  const sidebarEl = document.getElementById('sidebar');
+  const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+  const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+
+  function openMobileSidebar() {
+    sidebarEl.classList.add('mobile-open');
+    sidebarBackdrop.classList.add('show');
+  }
+
+  function closeMobileSidebar() {
+    sidebarEl.classList.remove('mobile-open');
+    sidebarBackdrop.classList.remove('show');
+  }
+
+  if (mobileMenuBtn) {
+    mobileMenuBtn.addEventListener('click', () => {
+      sidebarEl.classList.contains('mobile-open') ? closeMobileSidebar() : openMobileSidebar();
+    });
+  }
+  if (sidebarBackdrop) {
+    sidebarBackdrop.addEventListener('click', closeMobileSidebar);
+  }
+
   document.getElementById('open-profile-btn').addEventListener('click', () => {
     switchView('settings', 'Profile Settings');
+    closeMobileSidebar();
   });
 
   const logoutBtn = document.getElementById('logout-btn');
@@ -340,16 +504,25 @@ document.addEventListener('DOMContentLoaded', () => {
       const newName = document.getElementById('settings-name').value;
       const newRole = document.getElementById('settings-role').value;
       const originalName = document.getElementById('profile-name').textContent;
-      
-      const result = await API.updateEmployee(newName, newRole, originalName);
+      const user = JSON.parse(localStorage.getItem('user'));
+
+      // Accounts without a linked employee record (admin, cashier, stockkeeper, ...)
+      // have nothing for API.updateEmployee to match — update the user account instead.
+      const isEmployeeLinked = dashboardData && dashboardData.employees.some(
+        e => e.name.toLowerCase().split(' ')[0] === user.username.toLowerCase()
+      );
+
+      const result = isEmployeeLinked
+        ? await API.updateEmployee(newName, newRole, originalName)
+        : await API.updateUser(user.id, { username: newName.split(' ')[0].toLowerCase() });
+
       if (result.success) {
         alert('Profile settings saved successfully!');
-        
+
         // Also update local storage session if user matching
-        const user = JSON.parse(localStorage.getItem('user'));
         if (user) {
           user.username = newName.split(' ')[0].toLowerCase();
-          user.role = newRole;
+          if (isEmployeeLinked) user.role = newRole;
           localStorage.setItem('user', JSON.stringify(user));
         }
 
@@ -381,19 +554,35 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       filteredDishes.forEach(dish => {
+        // Stock state: undefined/null means no stock tracking, 0 = out of stock
+        const hasStock = dish.stock !== undefined && dish.stock !== null;
+        const isOutOfStock = hasStock && dish.stock === 0;
+        const inCartQty = (cart.find(c => c.id === dish.id) || {}).quantity || 0;
+        const remaining = hasStock ? dish.stock - inCartQty : Infinity;
+        const stockBadge = hasStock
+          ? (isOutOfStock
+              ? `<span class="stock-badge out">Out of Stock</span>`
+              : `<span class="stock-badge ${remaining <= 3 ? 'low' : 'ok'}">${dish.stock} in stock</span>`)
+          : '';
         catalogGrid.innerHTML += `
-          <div class="catalog-item">
+          <div class="catalog-item ${isOutOfStock ? 'catalog-item-disabled' : ''}">
             <img src="${dish.imageUrl}" alt="${dish.name}">
             <div class="catalog-item-info">
               <div class="catalog-item-name">${dish.name}</div>
               <div class="catalog-item-price">Rs. ${Number(dish.price || 0).toFixed(2)}</div>
-              <button class="btn-outline" onclick="window.addToCart(${dish.id})"><i class="fa-solid fa-cart-plus"></i> Add to Order</button>
+              ${stockBadge}
+              <button class="btn-outline" onclick="window.addToCart(${dish.id})" ${isOutOfStock ? 'disabled' : ''}>
+                <i class="fa-solid fa-cart-plus"></i> ${isOutOfStock ? 'Out of Stock' : 'Add to Order'}
+              </button>
             </div>
           </div>
         `;
       });
     }
-    
+
+    // Expose globally so addToCart/updateQuantity can refresh stock badges
+    window.drawCatalogGlobal = () => drawCatalog(currentFilter, searchInput ? searchInput.value : '');
+
     drawCatalog();
 
     if (searchInput) {
@@ -434,36 +623,213 @@ document.addEventListener('DOMContentLoaded', () => {
       window.hasInitializedNotifications = true;
     }
     renderNotifications();
+    
+    // Load users if Admin
+    const currentUser = JSON.parse(localStorage.getItem('user'));
+    if (currentUser && currentUser.role === 'Admin') {
+      loadUsersData();
+    }
+  }
+
+  let systemUsers = [];
+
+  async function loadUsersData() {
+    const res = await API.getUsers();
+    if (res.success && res.users) {
+      systemUsers = res.users;
+      renderUsersTable();
+    }
+  }
+
+  function renderUsersTable() {
+    const tbody = document.getElementById('users-table-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    systemUsers.forEach(u => {
+      const badgeCls = u.role === 'Admin' ? 'role-admin' : (u.role === 'StockKeeper' ? 'role-stock' : 'role-cashier');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${u.id}</td>
+        <td><strong>${u.username}</strong></td>
+        <td><span class="role-badge ${badgeCls}">${u.role}</span></td>
+        <td>
+          <button class="btn-outline" style="padding: 0.35rem 0.6rem; margin-right: 0.5rem;" onclick="window.editUser(${u.id})">
+            <i class="fa-solid fa-pen"></i> Edit
+          </button>
+          <button class="btn-outline" style="padding: 0.35rem 0.6rem; color: #EF4444; border-color: #EF4444;" onclick="window.deleteUser(${u.id})">
+            <i class="fa-solid fa-trash"></i> Delete
+          </button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // -- Image File Upload Helper --
+  function readImageFile(file) {
+    return new Promise((resolve) => {
+      if (!file) return resolve(null);
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target.result);
+      reader.readAsDataURL(file);
+    });
   }
 
   // -- Modal Logic --
   const addItemModal = document.getElementById('add-item-modal');
   const addItemBtn = document.getElementById('add-item-btn');
+  const addItemBtnStock = document.getElementById('add-item-btn-stock');
   const closeModalBtns = [document.getElementById('close-modal-btn'), document.getElementById('cancel-modal-btn')];
   const addItemForm = document.getElementById('add-item-form');
 
-  if (addItemBtn) {
-    addItemBtn.addEventListener('click', () => addItemModal.classList.add('show'));
+  if (addItemBtn || addItemBtnStock) {
+    if (addItemBtn) addItemBtn.addEventListener('click', () => addItemModal.classList.add('show'));
+    if (addItemBtnStock) addItemBtnStock.addEventListener('click', () => addItemModal.classList.add('show'));
     closeModalBtns.forEach(btn => btn.addEventListener('click', () => addItemModal.classList.remove('show')));
     
     addItemForm.addEventListener('submit', async (e) => {
       e.preventDefault();
+      const fileInput = document.getElementById('item-image-file');
+      const imageBase64 = await readImageFile(fileInput.files[0]);
+
       const newDish = {
         name: document.getElementById('item-name').value,
         category: document.getElementById('item-category').value,
         price: document.getElementById('item-price').value,
-        imageUrl: document.getElementById('item-image').value
+        imageUrl: document.getElementById('item-image').value,
+        imageBase64: imageBase64
       };
       
       const result = await API.addDish(newDish);
       if (result.success) {
         // Refresh dashboard data
         const data = await API.getDashboardData();
-        if(data) renderNewViews(data);
+        if(data) {
+          renderNewViews(data);
+          if (typeof renderStockTable === 'function') renderStockTable(data.dishes);
+        }
         addItemModal.classList.remove('show');
         addItemForm.reset();
       } else {
         alert('Failed to add item.');
+      }
+    });
+  }
+
+  // Edit Item Modal Logic
+  const editItemModal = document.getElementById('edit-item-modal');
+  const closeEditModalBtns = [document.getElementById('close-edit-modal-btn'), document.getElementById('cancel-edit-modal-btn')];
+  const editItemForm = document.getElementById('edit-item-form');
+
+  if (editItemModal) {
+    closeEditModalBtns.forEach(btn => btn.addEventListener('click', () => editItemModal.classList.remove('show')));
+
+    window.openEditModal = function(dishId) {
+      const dish = (dashboardData && dashboardData.dishes) ? dashboardData.dishes.find(d => d.id === dishId) : null;
+      if (!dish) return;
+      
+      document.getElementById('edit-item-id').value = dish.id;
+      document.getElementById('edit-item-name').value = dish.name;
+      document.getElementById('edit-item-category').value = dish.category;
+      document.getElementById('edit-item-image').value = dish.imageUrl || '';
+      document.getElementById('edit-item-image-file').value = '';
+      
+      editItemModal.classList.add('show');
+    };
+
+    editItemForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const dishId = document.getElementById('edit-item-id').value;
+      const fileInput = document.getElementById('edit-item-image-file');
+      const imageBase64 = await readImageFile(fileInput.files[0]);
+
+      const updates = {
+        name: document.getElementById('edit-item-name').value,
+        category: document.getElementById('edit-item-category').value,
+        imageUrl: document.getElementById('edit-item-image').value,
+        imageBase64: imageBase64
+      };
+
+      const result = await API.updateDish(dishId, updates);
+      if (result.success) {
+        const data = await API.getDashboardData();
+        if(data) {
+          renderNewViews(data);
+          if (typeof renderStockTable === 'function') renderStockTable(data.dishes);
+        }
+        editItemModal.classList.remove('show');
+        editItemForm.reset();
+      } else {
+        alert('Failed to update item details.');
+      }
+    });
+  }
+
+  // Role Modal Logic
+  const roleModal = document.getElementById('role-modal');
+  const roleForm = document.getElementById('role-form');
+  const addRoleBtn = document.getElementById('add-role-btn');
+  const closeRoleModalBtns = [document.getElementById('close-role-modal-btn'), document.getElementById('cancel-role-modal-btn')];
+  
+  if (roleModal) {
+    addRoleBtn.addEventListener('click', () => {
+      document.getElementById('role-id').value = '';
+      document.getElementById('role-username').value = '';
+      document.getElementById('role-type').value = 'Cashier';
+      document.getElementById('role-password').value = '';
+      document.getElementById('role-password').required = true;
+      document.getElementById('role-password-hint').textContent = '';
+      document.getElementById('role-modal-title').textContent = 'Add New Role';
+      roleModal.classList.add('show');
+    });
+
+    closeRoleModalBtns.forEach(btn => btn.addEventListener('click', () => roleModal.classList.remove('show')));
+
+    window.editUser = function(id) {
+      const user = systemUsers.find(u => u.id === id);
+      if (!user) return;
+      document.getElementById('role-id').value = user.id;
+      document.getElementById('role-username').value = user.username;
+      document.getElementById('role-type').value = user.role;
+      document.getElementById('role-password').value = '';
+      document.getElementById('role-password').required = false;
+      document.getElementById('role-password-hint').textContent = '(Leave blank to keep current)';
+      document.getElementById('role-modal-title').textContent = 'Edit Role';
+      roleModal.classList.add('show');
+    };
+
+    window.deleteUser = async function(id) {
+      if (confirm('Are you sure you want to delete this role?')) {
+        const res = await API.deleteUser(id);
+        if (res.success) {
+          loadUsersData();
+        } else {
+          alert('Failed to delete role: ' + (res.message || 'Unknown error'));
+        }
+      }
+    };
+
+    roleForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('role-id').value;
+      const data = {
+        username: document.getElementById('role-username').value,
+        role: document.getElementById('role-type').value,
+        password: document.getElementById('role-password').value
+      };
+
+      let res;
+      if (id) {
+        res = await API.updateUser(id, data);
+      } else {
+        res = await API.addUser(data);
+      }
+
+      if (res.success) {
+        roleModal.classList.remove('show');
+        loadUsersData();
+      } else {
+        alert('Failed to save role: ' + (res.message || 'Unknown error'));
       }
     });
   }
@@ -475,6 +841,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!dashboardData) return;
     const dish = dashboardData.dishes.find(d => d.id === dishId);
     if (!dish) return;
+
+    // Stock enforcement
+    const hasStock = dish.stock !== undefined && dish.stock !== null;
+    if (hasStock) {
+      const inCartQty = (cart.find(c => c.id === dishId) || {}).quantity || 0;
+      if (dish.stock === 0) {
+        showStockToast(`${dish.name} is out of stock!`, 'error');
+        return;
+      }
+      if (inCartQty >= dish.stock) {
+        showStockToast(`Only ${dish.stock} unit(s) of ${dish.name} available!`, 'warn');
+        return;
+      }
+    }
 
     const existing = cart.find(item => item.id === dishId);
     if (existing) {
@@ -489,22 +869,63 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
     renderCart();
+    // Refresh catalog to update stock badges
+    if (window.drawCatalogGlobal) window.drawCatalogGlobal();
   };
 
   window.updateQuantity = function(dishId, change) {
     const item = cart.find(item => item.id === dishId);
     if (!item) return;
+
+    if (change > 0 && dashboardData) {
+      // Stock enforcement on qty increase
+      const dish = dashboardData.dishes.find(d => d.id === dishId);
+      if (dish && dish.stock !== undefined && dish.stock !== null) {
+        if (item.quantity >= dish.stock) {
+          showStockToast(`Only ${dish.stock} unit(s) of ${dish.name} in stock!`, 'warn');
+          return;
+        }
+      }
+    }
+
     item.quantity += change;
     if (item.quantity <= 0) {
       cart = cart.filter(item => item.id !== dishId);
     }
     renderCart();
+    if (window.drawCatalogGlobal) window.drawCatalogGlobal();
   };
 
   window.removeFromCart = function(dishId) {
     cart = cart.filter(item => item.id !== dishId);
     renderCart();
+    if (window.drawCatalogGlobal) window.drawCatalogGlobal();
   };
+
+  // -- Stock Toast Notification --
+  function showStockToast(message, type = 'warn') {
+    const existing = document.getElementById('stock-toast');
+    if (existing) existing.remove();
+    const colors = {
+      warn:  { bg: '#fef3c7', border: '#f59e0b', text: '#92400e', icon: 'fa-triangle-exclamation' },
+      error: { bg: '#fee2e2', border: '#ef4444', text: '#991b1b', icon: 'fa-circle-xmark' }
+    };
+    const c = colors[type] || colors.warn;
+    const toast = document.createElement('div');
+    toast.id = 'stock-toast';
+    toast.style.cssText = `
+      position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999;
+      background: ${c.bg}; border: 1px solid ${c.border}; color: ${c.text};
+      padding: 0.75rem 1.1rem; border-radius: 10px;
+      font-size: 0.85rem; font-weight: 600;
+      display: flex; align-items: center; gap: 0.5rem;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+      animation: slideInToast 0.25s ease;
+    `;
+    toast.innerHTML = `<i class="fa-solid ${c.icon}"></i> ${message}`;
+    document.body.appendChild(toast);
+    setTimeout(() => { if (toast.parentNode) toast.remove(); }, 2800);
+  }
 
   function renderCart() {
     const cartItems = document.getElementById('cart-items');
@@ -536,17 +957,27 @@ document.addEventListener('DOMContentLoaded', () => {
     cart.forEach(item => {
       const totalItemPrice = item.price * item.quantity;
       subtotal += totalItemPrice;
+
+      // Stock remaining for this item
+      const dish = dashboardData ? dashboardData.dishes.find(d => d.id === item.id) : null;
+      const hasStock = dish && dish.stock !== undefined && dish.stock !== null;
+      const stockRemaining = hasStock ? dish.stock - item.quantity : null;
+      const atLimit = hasStock && item.quantity >= dish.stock;
+      const stockInfo = hasStock
+        ? `<span style="font-size:0.7rem; color:${atLimit ? '#ef4444' : '#6b7280'}; display:block; margin-top:2px;">${atLimit ? '⚠ Max stock reached' : `${stockRemaining} more available`}</span>`
+        : '';
       
       cartItems.innerHTML += `
         <div class="cart-item-row">
           <div class="cart-item-details">
             <div class="cart-item-name">${item.name}</div>
             <div class="cart-item-price">Rs. ${item.price.toFixed(2)} x ${item.quantity}</div>
+            ${stockInfo}
           </div>
           <div class="cart-item-qty-control">
             <button class="qty-btn" onclick="window.updateQuantity(${item.id}, -1)"><i class="fa-solid fa-minus"></i></button>
             <span class="cart-item-qty">${item.quantity}</span>
-            <button class="qty-btn" onclick="window.updateQuantity(${item.id}, 1)"><i class="fa-solid fa-plus"></i></button>
+            <button class="qty-btn" onclick="window.updateQuantity(${item.id}, 1)" ${atLimit ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''}><i class="fa-solid fa-plus"></i></button>
             <button class="qty-btn-delete" onclick="window.removeFromCart(${item.id})"><i class="fa-regular fa-trash-can"></i></button>
           </div>
         </div>

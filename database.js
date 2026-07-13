@@ -5,15 +5,16 @@ const dbPath = path.join(__dirname, 'db.json');
 
 const initialData = {
   users: [
-    { id: 1, username: 'admin', password: 'password', role: 'Manager' },
-    { id: 2, username: 'theresa', password: 'password', role: 'Waiter' }
+    { id: 1, username: 'admin',       password: 'admin123',   role: 'Admin' },
+    { id: 2, username: 'stockkeeper', password: 'stock123',   role: 'StockKeeper' },
+    { id: 3, username: 'cashier',     password: 'cashier123', role: 'Cashier' }
   ],
   dishes: [
-    { id: 1, name: 'Espresso', category: 'Drinks', orders: 124, price: 3.50, imageUrl: 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=500&q=80' },
-    { id: 2, name: 'Avocado Toast', category: 'Food', orders: 98, price: 8.50, imageUrl: 'https://images.unsplash.com/photo-1541532713592-79a0317b6b77?w=500&q=80' },
-    { id: 3, name: 'Cappuccino', category: 'Drinks', orders: 210, price: 4.50, imageUrl: 'https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=500&q=80' },
-    { id: 4, name: 'Blueberry Muffin', category: 'Food', orders: 85, price: 3.00, imageUrl: 'https://images.unsplash.com/photo-1607958996333-41aef7caefaa?w=500&q=80' },
-    { id: 5, name: 'Latte', category: 'Drinks', orders: 185, price: 4.00, imageUrl: 'https://images.unsplash.com/photo-1497935586351-b67a49e012bf?w=500&q=80' }
+    { id: 1, name: 'Espresso',         category: 'Drinks', orders: 124, price: 3.50, stock: 0, imageUrl: 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=500&q=80' },
+    { id: 2, name: 'Avocado Toast',    category: 'Food',   orders: 98,  price: 8.50, stock: 0, imageUrl: 'https://images.unsplash.com/photo-1541532713592-79a0317b6b77?w=500&q=80' },
+    { id: 3, name: 'Cappuccino',       category: 'Drinks', orders: 210, price: 4.50, stock: 0, imageUrl: 'https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=500&q=80' },
+    { id: 4, name: 'Blueberry Muffin', category: 'Food',   orders: 85,  price: 3.00, stock: 0, imageUrl: 'https://images.unsplash.com/photo-1607958996333-41aef7caefaa?w=500&q=80' },
+    { id: 5, name: 'Latte',            category: 'Drinks', orders: 185, price: 4.00, stock: 0, imageUrl: 'https://images.unsplash.com/photo-1497935586351-b67a49e012bf?w=500&q=80' }
   ],
   employees: [
     { id: 1, name: 'Theresa Webb', role: 'Waiter', earnings: 450, shiftDuration: '08:00 AM - 04:00 PM', avatarUrl: 'https://i.pravatar.cc/100?img=1' },
@@ -97,6 +98,7 @@ function addDish(dish) {
     name: dish.name,
     category: dish.category,
     price: Number(dish.price),
+    stock: 0,
     imageUrl: dish.imageUrl || 'https://images.unsplash.com/photo-1541167760496-1628856ab772?w=100&q=80',
     orders: 0
   };
@@ -126,6 +128,10 @@ function createOrder(orderData) {
     const dbDish = data.dishes.find(d => d.id === Number(item.id));
     if (dbDish) {
       dbDish.orders = (dbDish.orders || 0) + Number(item.quantity);
+      // Decrement stock — wire stock keeper → cashier
+      if (dbDish.stock !== undefined && dbDish.stock !== null) {
+        dbDish.stock = Math.max(0, dbDish.stock - Number(item.quantity));
+      }
     }
   });
   
@@ -274,7 +280,8 @@ function getDashboardStats(period = 'today') {
     category: d.category,
     orders: d.orders || 1,
     imageUrl: d.imageUrl,
-    price: d.price
+    price: d.price,
+    stock: d.stock   // ← critical: must be passed so Cashier enforces stock limits
   }));
 
   return {
@@ -296,11 +303,70 @@ function getDashboardStats(period = 'today') {
   };
 }
 
+function updateDish(dishId, updates) {
+  const data = getDb();
+  const dish = data.dishes.find(d => d.id === Number(dishId));
+  if (!dish) return null;
+  if (updates.price  !== undefined) dish.price  = Number(updates.price);
+  if (updates.stock  !== undefined) dish.stock  = Number(updates.stock);
+  if (updates.name   !== undefined) dish.name   = updates.name;
+  if (updates.category !== undefined) dish.category = updates.category;
+  if (updates.imageUrl !== undefined) dish.imageUrl = updates.imageUrl;
+  saveDb(data);
+  return dish;
+}
+
+function getUsers() {
+  const data = getDb();
+  return data.users;
+}
+
+function addUser(userData) {
+  const data = getDb();
+  const newId = data.users.length > 0 ? Math.max(...data.users.map(u => u.id)) + 1 : 1;
+  const newUser = { id: newId, username: userData.username, password: userData.password, role: userData.role };
+  data.users.push(newUser);
+  saveDb(data);
+  return newUser;
+}
+
+function updateUser(userId, updates) {
+  const data = getDb();
+  const user = data.users.find(u => u.id === Number(userId));
+  if (!user) return null;
+  if (updates.username !== undefined) user.username = updates.username;
+  if (updates.password !== undefined && updates.password.trim() !== '') user.password = updates.password;
+  if (updates.role !== undefined) user.role = updates.role;
+  saveDb(data);
+  return user;
+}
+
+function deleteUser(userId) {
+  const data = getDb();
+  const index = data.users.findIndex(u => u.id === Number(userId));
+  if (index !== -1) {
+    // Basic protection: do not delete the last Admin
+    const user = data.users[index];
+    if (user.role === 'Admin' && data.users.filter(u => u.role === 'Admin').length <= 1) {
+      throw new Error("Cannot delete the last Admin account");
+    }
+    const deleted = data.users.splice(index, 1)[0];
+    saveDb(data);
+    return deleted;
+  }
+  return null;
+}
+
 module.exports = {
   initDb,
   getDb,
   saveDb,
   addDish,
+  updateDish,
   createOrder,
-  getDashboardStats
+  getDashboardStats,
+  getUsers,
+  addUser,
+  updateUser,
+  deleteUser
 };

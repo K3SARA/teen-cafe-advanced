@@ -3,14 +3,26 @@
     {
       "id": 1,
       "username": "admin",
-      "password": "password",
-      "role": "Manager"
+      "password": "admin123",
+      "role": "Admin"
     },
     {
       "id": 2,
-      "username": "kesara",
-      "password": "password",
-      "role": "Waiter"
+      "username": "stockkeeper",
+      "password": "stock123",
+      "role": "StockKeeper"
+    },
+    {
+      "id": 3,
+      "username": "cashier",
+      "password": "cashier123",
+      "role": "Cashier"
+    },
+    {
+      "id": 4,
+      "username": "Hashini",
+      "password": "Hashini123",
+      "role": "Cashier"
     }
   ],
   "dishes": [
@@ -18,9 +30,10 @@
       "id": 1,
       "name": "Espresso",
       "category": "Drinks",
-      "orders": 124,
+      "orders": 142,
       "price": 3.5,
-      "imageUrl": "https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=500&q=80"
+      "imageUrl": "https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=500&q=80",
+      "stock": 7
     },
     {
       "id": 2,
@@ -28,7 +41,8 @@
       "category": "Food",
       "orders": 99,
       "price": 8.5,
-      "imageUrl": "https://images.unsplash.com/photo-1541532713592-79a0317b6b77?w=500&q=80"
+      "imageUrl": "https://images.unsplash.com/photo-1541532713592-79a0317b6b77?w=500&q=80",
+      "stock": 0
     },
     {
       "id": 3,
@@ -36,7 +50,8 @@
       "category": "Drinks",
       "orders": 210,
       "price": 4.5,
-      "imageUrl": "https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=500&q=80"
+      "imageUrl": "https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=500&q=80",
+      "stock": 0
     },
     {
       "id": 4,
@@ -44,7 +59,8 @@
       "category": "Food",
       "orders": 85,
       "price": 3,
-      "imageUrl": "https://images.unsplash.com/photo-1607958996333-41aef7caefaa?w=500&q=80"
+      "imageUrl": "https://images.unsplash.com/photo-1607958996333-41aef7caefaa?w=500&q=80",
+      "stock": 0
     },
     {
       "id": 5,
@@ -52,7 +68,17 @@
       "category": "Drinks",
       "orders": 185,
       "price": 4,
-      "imageUrl": "https://images.unsplash.com/photo-1497935586351-b67a49e012bf?w=500&q=80"
+      "imageUrl": "https://images.unsplash.com/photo-1497935586351-b67a49e012bf?w=500&q=80",
+      "stock": 0
+    },
+    {
+      "id": 6,
+      "name": "Falooda",
+      "category": "Drinks",
+      "price": 250,
+      "stock": 10,
+      "imageUrl": "images/upload_1783704630959.jpeg",
+      "orders": 0
     }
   ],
   "employees": [
@@ -134,6 +160,54 @@
     }
   ],
   "bills": [
+    {
+      "id": "ORD-1019",
+      "date": "2026-07-10",
+      "customer": "Takeaway",
+      "amount": 10.5,
+      "status": "Paid",
+      "items": [
+        {
+          "id": 1,
+          "name": "Espresso",
+          "category": "Drinks",
+          "price": 3.5,
+          "quantity": 3
+        }
+      ]
+    },
+    {
+      "id": "ORD-1018",
+      "date": "2026-07-10",
+      "customer": "Takeaway",
+      "amount": 3.5,
+      "status": "Paid",
+      "items": [
+        {
+          "id": 1,
+          "name": "Espresso",
+          "category": "Drinks",
+          "price": 3.5,
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "id": "ORD-1017",
+      "date": "2026-07-10",
+      "customer": "Takeaway",
+      "amount": 49,
+      "status": "Paid",
+      "items": [
+        {
+          "id": 1,
+          "name": "Espresso",
+          "category": "Drinks",
+          "price": 3.5,
+          "quantity": 14
+        }
+      ]
+    },
     {
       "id": "ORD-1016",
       "date": "2026-07-09",
@@ -362,11 +436,11 @@
     }
   ],
   "summary": {
-    "totalIncome": 77549.5,
+    "totalIncome": 77612.5,
     "foodIncome": 35008.5,
-    "drinksIncome": 38541,
+    "drinksIncome": 38604,
     "othersIncome": 4000,
-    "totalOrders": 21376,
+    "totalOrders": 21379,
     "ordersGrowth": -2.33,
     "newCustomers": 256,
     "customersGrowth": 32.4

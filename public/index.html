@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SmartPOS - Teen's Cafe</title>
+  <link rel="icon" type="image/png" href="images/logo.png">
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css">
@@ -25,14 +26,14 @@
           <label for="username">Email / Username</label>
           <div class="input-wrapper">
             <i class="fa-regular fa-user"></i>
-            <input type="text" id="username" placeholder="Enter your username" value="theresa" required>
+            <input type="text" id="username" placeholder="Enter your username" value="admin" required>
           </div>
         </div>
         <div class="input-group">
           <label for="password">Password</label>
           <div class="input-wrapper">
             <i class="fa-solid fa-lock"></i>
-            <input type="password" id="password" placeholder="Enter your password" value="password" required>
+            <input type="password" id="password" placeholder="Enter your password" value="admin123" required>
           </div>
         </div>
         <div class="login-options">
@@ -45,9 +46,22 @@
         <div id="login-error" class="hidden" style="color: #dc2626; background: #fee2e2; border: 1px solid #fecaca; font-size: 0.8rem; padding: 0.6rem; border-radius: var(--radius-sm); margin-bottom: 1rem; text-align: center; display: flex; align-items: center; justify-content: center; gap: 0.4rem; font-weight: 500;">
           <i class="fa-solid fa-triangle-exclamation"></i> <span id="login-error-text">Incorrect username or password.</span>
         </div>
-        <div
-          style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 1rem; text-align: center; background: var(--bg-color); padding: 0.4rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
-          Demo Sign-in: <strong>theresa</strong> / <strong>password</strong>
+        <div class="role-hint-card">
+          <div class="role-hint-title"><i class="fa-solid fa-circle-info"></i> Demo Credentials</div>
+          <div class="role-hint-rows">
+            <div class="role-hint-row">
+              <span class="role-badge role-admin">Admin</span>
+              <span class="hint-cred"><strong>admin</strong> / admin123</span>
+            </div>
+            <div class="role-hint-row">
+              <span class="role-badge role-stock">Stock Keeper</span>
+              <span class="hint-cred"><strong>stockkeeper</strong> / stock123</span>
+            </div>
+            <div class="role-hint-row">
+              <span class="role-badge role-cashier">Cashier</span>
+              <span class="hint-cred"><strong>cashier</strong> / cashier123</span>
+            </div>
+          </div>
         </div>
         <button type="submit" class="btn-primary" id="login-btn">
           Sign In
@@ -62,8 +76,11 @@
   <!-- Main Dashboard -->
   <div id="app-dashboard" class="app-container hidden">
 
+    <!-- Sidebar backdrop (mobile only) -->
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
     <!-- Sidebar -->
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
         <img src="images/logo.png" alt="Logo" class="sidebar-logo">
         <h2>SmartPOS</h2>
@@ -72,18 +89,20 @@
       <nav class="sidebar-menu">
         <p class="menu-label">Main Menu</p>
         <ul>
-          <li class="active"><a href="#" data-view="dashboard"><i class="fa-solid fa-house"></i> Dashboard</a></li>
-          <li><a href="#" data-view="food-drinks"><i class="fa-solid fa-burger"></i> Food & Drinks</a></li>
-          <li><a href="#" data-view="messages"><i class="fa-regular fa-message"></i> Messages</a></li>
-          <li><a href="#" data-view="bills"><i class="fa-solid fa-receipt"></i> Bills</a></li>
-          <li><a href="#" data-view="settings"><i class="fa-solid fa-gear"></i> Settings</a></li>
+          <li class="active" id="nav-dashboard"><a href="#" data-view="dashboard"><i class="fa-solid fa-house"></i> Dashboard</a></li>
+          <li id="nav-food-drinks"><a href="#" data-view="food-drinks"><i class="fa-solid fa-burger"></i> Food &amp; Drinks</a></li>
+          <li id="nav-stock"><a href="#" data-view="stock"><i class="fa-solid fa-boxes-stacked"></i> Stock Management</a></li>
+          <li id="nav-messages"><a href="#" data-view="messages"><i class="fa-regular fa-message"></i> Messages</a></li>
+          <li id="nav-bills"><a href="#" data-view="bills"><i class="fa-solid fa-receipt"></i> Bills</a></li>
+          <li id="nav-settings"><a href="#" data-view="settings"><i class="fa-solid fa-gear"></i> Settings</a></li>
+          <li id="nav-users" class="hidden"><a href="#" data-view="users"><i class="fa-solid fa-users-gear"></i> Role Management</a></li>
         </ul>
 
         <p class="menu-label">Other</p>
         <ul>
-          <li><a href="#" data-view="messages"><i class="fa-regular fa-bell"></i> Notifications <span
+          <li id="nav-notifications"><a href="#" data-view="messages"><i class="fa-regular fa-bell"></i> Notifications <span
                 class="badge" id="sidebar-notifications-count">2</span></a></li>
-          <li><a href="#" data-view="support"><i class="fa-regular fa-circle-question"></i> Support</a></li>
+          <li id="nav-support"><a href="#" data-view="support"><i class="fa-regular fa-circle-question"></i> Support</a></li>
         </ul>
       </nav>
 
@@ -94,6 +113,7 @@
             <h4 id="profile-name">Loading...</h4>
             <p id="profile-role">Loading...</p>
           </div>
+          <span class="sidebar-role-badge" id="sidebar-role-badge"></span>
         </div>
         <div style="display: flex; gap: 0.5rem; width: 100%; margin-top: 0.75rem;">
           <button class="btn-outline" id="open-profile-btn" style="flex: 1; font-size: 0.8rem; padding: 0.4rem 0.5rem;">Profile</button>
@@ -109,6 +129,7 @@
       <!-- Top Header Bar -->
       <header class="top-header">
         <div class="header-left">
+          <button class="mobile-menu-btn" id="mobile-menu-btn"><i class="fa-solid fa-bars"></i></button>
           <button class="back-btn"><i class="fa-solid fa-arrow-left"></i></button>
           <div class="breadcrumbs">
             <span>Dashboard</span> <i class="fa-solid fa-chevron-right"></i> <span class="current">Sales
@@ -156,8 +177,40 @@
         </div>
       </div>
 
+
       <!-- Views Container -->
       <div id="views-container">
+
+        <!-- Stock Management View (Stock Keeper only) -->
+        <div id="view-stock" class="view-section hidden">
+          <div class="dashboard-grid">
+            <div class="card col-span-4">
+              <div class="card-header" style="justify-content: space-between; display: flex; align-items: center;">
+                <div>
+                  <h3><i class="fa-solid fa-boxes-stacked" style="color: var(--primary); margin-right: 0.5rem;"></i>Stock &amp; Price Management</h3>
+                  <span style="font-size: 0.82rem; color: var(--text-muted);">Update item prices and stock levels</span>
+                </div>
+                <button class="btn-primary" style="padding: 0.5rem 1rem;" id="add-item-btn-stock"><i class="fa-solid fa-plus"></i> Add New Item</button>
+              </div>
+              <div class="table-container">
+                <table class="data-table" id="stock-table">
+                  <thead>
+                    <tr>
+                      <th>Item</th>
+                      <th>Category</th>
+                      <th>Current Price (Rs.)</th>
+                      <th>Stock Qty</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="stock-table-body">
+                    <!-- Populated by JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <!-- Dashboard View -->
         <div id="view-dashboard" class="view-section active">
@@ -218,7 +271,7 @@
             </div>
 
             <!-- Trending Dishes -->
-            <div class="card col-span-2">
+            <div class="card col-span-4">
               <div class="card-header">
                 <h3>Trending Dishes</h3>
                 <div class="dropdown">
@@ -232,30 +285,6 @@
                       <th>Dish</th>
                       <th>Category</th>
                       <th>Orders</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <!-- Rows populated by JS -->
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <!-- Best Employees -->
-            <div class="card col-span-2">
-              <div class="card-header">
-                <h3>Best Employees</h3>
-                <div class="dropdown">
-                  <span>Today</span> <i class="fa-solid fa-chevron-down"></i>
-                </div>
-              </div>
-              <div class="table-container">
-                <table class="data-table" id="employees-table">
-                  <thead>
-                    <tr>
-                      <th>Employee</th>
-                      <th>Role</th>
-                      <th>Earnings</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -409,6 +438,36 @@
           </div>
         </div>
 
+        <!-- Role Management View -->
+        <div id="view-users" class="view-section hidden">
+          <div class="dashboard-grid">
+            <div class="card col-span-4">
+              <div class="card-header" style="justify-content: space-between; display: flex; align-items: center;">
+                <div>
+                  <h3><i class="fa-solid fa-users-gear" style="color: var(--primary); margin-right: 0.5rem;"></i> Role Management</h3>
+                  <span style="font-size: 0.82rem; color: var(--text-muted);">Add, edit, or remove system access roles</span>
+                </div>
+                <button class="btn-primary" style="padding: 0.5rem 1rem;" id="add-role-btn"><i class="fa-solid fa-plus"></i> Add New Role</button>
+              </div>
+              <div class="table-container">
+                <table class="data-table" id="users-table">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Username</th>
+                      <th>System Role</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="users-table-body">
+                    <!-- Populated by JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div> <!-- End Views Container -->
     </main>
   </div>
@@ -437,12 +496,55 @@
           <input type="number" step="0.01" class="form-input" id="item-price" placeholder="e.g. 5.50" required>
         </div>
         <div class="input-group">
-          <label>Image URL (Optional)</label>
+          <label>Upload Image</label>
+          <input type="file" class="form-input" id="item-image-file" accept="image/*">
+        </div>
+        <div style="text-align:center; font-size: 0.8rem; margin: 0.5rem 0;">OR</div>
+        <div class="input-group">
+          <label>Image URL</label>
           <input type="url" class="form-input" id="item-image" placeholder="https://...">
         </div>
         <div class="modal-footer">
           <button type="button" class="btn-outline" id="cancel-modal-btn">Cancel</button>
           <button type="submit" class="btn-primary" style="width: auto;">Save Item</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Item Modal -->
+  <div class="modal-overlay" id="edit-item-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Edit Item Details</h3>
+        <button class="modal-close" id="close-edit-modal-btn"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="edit-item-form" class="settings-form">
+        <input type="hidden" id="edit-item-id">
+        <div class="input-group">
+          <label>Item Name</label>
+          <input type="text" class="form-input" id="edit-item-name" required>
+        </div>
+        <div class="input-group">
+          <label>Category</label>
+          <select class="form-input" id="edit-item-category" required>
+            <option value="Food">Food</option>
+            <option value="Drinks">Drinks</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label>Upload Image</label>
+          <input type="file" class="form-input" id="edit-item-image-file" accept="image/*">
+        </div>
+        <div style="text-align:center; font-size: 0.8rem; margin: 0.5rem 0;">OR</div>
+        <div class="input-group">
+          <label>Image URL</label>
+          <input type="url" class="form-input" id="edit-item-image" placeholder="https://...">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-outline" id="cancel-edit-modal-btn">Cancel</button>
+          <button type="submit" class="btn-primary" style="width: auto;">Save Changes</button>
         </div>
       </form>
     </div>
@@ -492,7 +594,40 @@
 
         <div class="modal-footer">
           <button type="button" class="btn-outline" id="cancel-checkout-modal-btn">Cancel</button>
-          <button type="submit" class="btn-primary" style="width: auto;">Confirm Payment & Print</button>
+          <button type="submit" class="btn-primary" style="width: auto;">Confirm Checkout</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Role Modal -->
+  <div class="modal-overlay" id="role-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="role-modal-title">Add New Role</h3>
+        <button class="modal-close" id="close-role-modal-btn"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="role-form" class="settings-form">
+        <input type="hidden" id="role-id">
+        <div class="input-group">
+          <label>Username</label>
+          <input type="text" class="form-input" id="role-username" required>
+        </div>
+        <div class="input-group">
+          <label>System Role</label>
+          <select class="form-input" id="role-type" required>
+            <option value="Admin">Admin</option>
+            <option value="StockKeeper">Stock Keeper</option>
+            <option value="Cashier">Cashier</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label>Password <span style="font-size: 0.75rem; color: #888;" id="role-password-hint"></span></label>
+          <input type="password" class="form-input" id="role-password">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-outline" id="cancel-role-modal-btn">Cancel</button>
+          <button type="submit" class="btn-primary" style="width: auto;">Save Role</button>
         </div>
       </form>
     </div>

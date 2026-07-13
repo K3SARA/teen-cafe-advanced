@@ -13,6 +13,15 @@ const LocalPOSDB = {
       db = this.initDb();
     } else {
       db = JSON.parse(db);
+      // Migration: Inject users if missing (for returning visitors with old cache)
+      if (!db.users) {
+        db.users = [
+          { id: 1, username: 'admin',       password: 'admin123',   role: 'Admin' },
+          { id: 2, username: 'stockkeeper', password: 'stock123',   role: 'StockKeeper' },
+          { id: 3, username: 'cashier',     password: 'cashier123', role: 'Cashier' }
+        ];
+        this.saveDb(db);
+      }
     }
     return db;
   },
@@ -22,15 +31,16 @@ const LocalPOSDB = {
   initDb() {
     const seed = {
       users: [
-        { id: 1, username: 'admin', password: 'password', role: 'Manager' },
-        { id: 2, username: 'theresa', password: 'password', role: 'Waiter' }
+        { id: 1, username: 'admin',       password: 'admin123',   role: 'Admin' },
+        { id: 2, username: 'stockkeeper', password: 'stock123',   role: 'StockKeeper' },
+        { id: 3, username: 'cashier',     password: 'cashier123', role: 'Cashier' }
       ],
       dishes: [
-        { id: 1, name: 'Espresso', category: 'Drinks', orders: 124, price: 3.50, imageUrl: 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=500&q=80' },
-        { id: 2, name: 'Avocado Toast', category: 'Food', orders: 98, price: 8.50, imageUrl: 'https://images.unsplash.com/photo-1541532713592-79a0317b6b77?w=500&q=80' },
-        { id: 3, name: 'Cappuccino', category: 'Drinks', orders: 210, price: 4.50, imageUrl: 'https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=500&q=80' },
-        { id: 4, name: 'Blueberry Muffin', category: 'Food', orders: 85, price: 3.00, imageUrl: 'https://images.unsplash.com/photo-1607958996333-41aef7caefaa?w=500&q=80' },
-        { id: 5, name: 'Latte', category: 'Drinks', orders: 185, price: 4.00, imageUrl: 'https://images.unsplash.com/photo-1497935586351-b67a49e012bf?w=500&q=80' }
+        { id: 1, name: 'Espresso', category: 'Drinks', orders: 124, price: 3.50, stock: 0, imageUrl: 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=500&q=80' },
+        { id: 2, name: 'Avocado Toast', category: 'Food', orders: 98, price: 8.50, stock: 0, imageUrl: 'https://images.unsplash.com/photo-1541532713592-79a0317b6b77?w=500&q=80' },
+        { id: 3, name: 'Cappuccino', category: 'Drinks', orders: 210, price: 4.50, stock: 0, imageUrl: 'https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=500&q=80' },
+        { id: 4, name: 'Blueberry Muffin', category: 'Food', orders: 85, price: 3.00, stock: 0, imageUrl: 'https://images.unsplash.com/photo-1607958996333-41aef7caefaa?w=500&q=80' },
+        { id: 5, name: 'Latte', category: 'Drinks', orders: 185, price: 4.00, stock: 0, imageUrl: 'https://images.unsplash.com/photo-1497935586351-b67a49e012bf?w=500&q=80' }
       ],
       employees: [
         { id: 1, name: 'Theresa Webb', role: 'Waiter', earnings: 450, shiftDuration: '08:00 AM - 04:00 PM', avatarUrl: 'https://i.pravatar.cc/100?img=1' },
@@ -70,15 +80,17 @@ const LocalPOSDB = {
     }
     return { success: false, message: 'Invalid credentials' };
   },
-  addDish(dishData) {
+  addDish(dish) {
     const db = this.getDb();
+    const maxId = db.dishes.length > 0 ? Math.max(...db.dishes.map(d => d.id)) : 0;
     const newDish = {
-      id: db.dishes.length + 1,
-      name: dishData.name,
-      category: dishData.category,
-      price: Number(dishData.price),
-      orders: 0,
-      imageUrl: dishData.imageUrl || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&q=80'
+      id: maxId + 1,
+      name: dish.name,
+      category: dish.category,
+      price: Number(dish.price),
+      stock: 0,
+      imageUrl: dish.imageUrl || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&q=80',
+      orders: 0
     };
     db.dishes.push(newDish);
     this.saveDb(db);
@@ -93,6 +105,10 @@ const LocalPOSDB = {
       const dbDish = db.dishes.find(d => d.id === Number(item.id));
       if (dbDish) {
         dbDish.orders = (dbDish.orders || 0) + Number(item.quantity);
+        // Decrement stock — wire stock keeper → cashier
+        if (dbDish.stock !== undefined && dbDish.stock !== null) {
+          dbDish.stock = Math.max(0, dbDish.stock - Number(item.quantity));
+        }
       }
     });
 
@@ -116,7 +132,7 @@ const LocalPOSDB = {
       emp.name = name;
       emp.role = role;
       
-      const user = db.users.find(u => u.username.toLowerCase() === originalName.toLowerCase().split(' ')[0] || u.role === emp.role);
+      const user = db.users.find(u => u.username.toLowerCase() === originalName.toLowerCase().split(' ')[0]);
       if (user) {
         user.username = name.split(' ')[0].toLowerCase();
         user.role = role;
@@ -126,6 +142,53 @@ const LocalPOSDB = {
       return { success: true, employee: emp };
     }
     return { success: false, message: 'Employee not found' };
+  },
+  updateDish(dishId, updates) {
+    const db = this.getDb();
+    const dish = db.dishes.find(d => d.id === Number(dishId));
+    if (!dish) return null;
+    if (updates.price    !== undefined) dish.price    = Number(updates.price);
+    if (updates.stock    !== undefined) dish.stock    = Number(updates.stock);
+    if (updates.name     !== undefined) dish.name     = updates.name;
+    if (updates.category !== undefined) dish.category = updates.category;
+    if (updates.imageUrl !== undefined) dish.imageUrl = updates.imageUrl;
+    this.saveDb(db);
+    return dish;
+  },
+  getUsers() {
+    const db = this.getDb();
+    return db.users.map(u => ({ id: u.id, username: u.username, role: u.role }));
+  },
+  addUser(userData) {
+    const db = this.getDb();
+    const newId = db.users.length > 0 ? Math.max(...db.users.map(u => u.id)) + 1 : 1;
+    const newUser = { id: newId, username: userData.username, password: userData.password, role: userData.role };
+    db.users.push(newUser);
+    this.saveDb(db);
+    return { id: newUser.id, username: newUser.username, role: newUser.role };
+  },
+  updateUser(userId, updates) {
+    const db = this.getDb();
+    const user = db.users.find(u => u.id === Number(userId));
+    if (!user) return null;
+    if (updates.username !== undefined) user.username = updates.username;
+    if (updates.password !== undefined && updates.password.trim() !== '') user.password = updates.password;
+    if (updates.role !== undefined) user.role = updates.role;
+    this.saveDb(db);
+    return { id: user.id, username: user.username, role: user.role };
+  },
+  deleteUser(userId) {
+    const db = this.getDb();
+    const index = db.users.findIndex(u => u.id === Number(userId));
+    if (index !== -1) {
+      if (db.users[index].role === 'Admin' && db.users.filter(u => u.role === 'Admin').length <= 1) {
+        throw new Error("Cannot delete the last Admin account");
+      }
+      const deleted = db.users.splice(index, 1)[0];
+      this.saveDb(db);
+      return { id: deleted.id, username: deleted.username, role: deleted.role };
+    }
+    return null;
   },
   getDashboardStats(period = 'today') {
     const db = this.getDb();
@@ -234,6 +297,7 @@ const LocalPOSDB = {
         customersGrowth: period === 'today' ? 8.2 : 5.1
       },
       sales: salesChartData,
+      // Use spread so ALL dish fields (including stock) are preserved
       dishes: Object.values(dishOrders),
       employees: db.employees,
       bills: db.bills,
@@ -329,6 +393,102 @@ const API = {
       useLocalDB = true;
       const bill = LocalPOSDB.checkout(orderData);
       return { success: true, bill };
+    }
+  },
+
+  async updateDish(dishId, updates) {
+    if (useLocalDB) {
+      const dish = LocalPOSDB.updateDish(dishId, updates);
+      return dish ? { success: true, dish } : { success: false, message: 'Dish not found' };
+    }
+    try {
+      const response = await fetch(`${API_BASE}/dishes/update`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dishId, ...updates })
+      });
+      if (!response.ok) throw new Error("HTTP " + response.status);
+      return await response.json();
+    } catch (error) {
+      console.warn("API Failover to LocalStorageDB triggered:", error);
+      useLocalDB = true;
+      const dish = LocalPOSDB.updateDish(dishId, updates);
+      return dish ? { success: true, dish } : { success: false, message: 'Dish not found' };
+    }
+  },
+
+  // -- User (Role) Management Methods --
+  async getUsers() {
+    if (useLocalDB) return { success: true, users: LocalPOSDB.getUsers() };
+    try {
+      const response = await fetch(`${API_BASE}/users`);
+      if (!response.ok) throw new Error("HTTP " + response.status);
+      return await response.json();
+    } catch (error) {
+      useLocalDB = true;
+      return { success: true, users: LocalPOSDB.getUsers() };
+    }
+  },
+  async addUser(userData) {
+    if (useLocalDB) {
+      const user = LocalPOSDB.addUser(userData);
+      return { success: true, user };
+    }
+    try {
+      const response = await fetch(`${API_BASE}/users`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData)
+      });
+      if (!response.ok) throw new Error("HTTP " + response.status);
+      return await response.json();
+    } catch (error) {
+      useLocalDB = true;
+      const user = LocalPOSDB.addUser(userData);
+      return { success: true, user };
+    }
+  },
+  async updateUser(userId, updates) {
+    if (useLocalDB) {
+      const user = LocalPOSDB.updateUser(userId, updates);
+      return user ? { success: true, user } : { success: false, message: 'User not found' };
+    }
+    try {
+      const response = await fetch(`${API_BASE}/users/${userId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      });
+      if (!response.ok) throw new Error("HTTP " + response.status);
+      return await response.json();
+    } catch (error) {
+      useLocalDB = true;
+      const user = LocalPOSDB.updateUser(userId, updates);
+      return user ? { success: true, user } : { success: false, message: 'User not found' };
+    }
+  },
+  async deleteUser(userId) {
+    if (useLocalDB) {
+      try {
+        const user = LocalPOSDB.deleteUser(userId);
+        return user ? { success: true, user } : { success: false, message: 'User not found' };
+      } catch (err) {
+        return { success: false, message: err.message };
+      }
+    }
+    try {
+      const response = await fetch(`${API_BASE}/users/${userId}`, { method: 'DELETE' });
+      const data = await response.json();
+      if (!response.ok && !data.message) throw new Error("HTTP " + response.status);
+      return data;
+    } catch (error) {
+      useLocalDB = true;
+      try {
+        const user = LocalPOSDB.deleteUser(userId);
+        return user ? { success: true, user } : { success: false, message: 'User not found' };
+      } catch (err) {
+        return { success: false, message: err.message };
+      }
     }
   }
 };

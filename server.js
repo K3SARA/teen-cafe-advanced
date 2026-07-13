@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 const db = require('./database');
 
 const app = express();
@@ -8,7 +9,7 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Initialize Database
@@ -47,7 +48,7 @@ app.post('/api/employees/update', (req, res) => {
       data.employees[employeeIndex].role = role;
       
       // Also update username/role in users if matched
-      const userIndex = data.users.findIndex(u => u.username.toLowerCase() === originalName.toLowerCase().split(' ')[0] || u.role === data.employees[employeeIndex].role);
+      const userIndex = data.users.findIndex(u => u.username.toLowerCase() === originalName.toLowerCase().split(' ')[0]);
       if (userIndex !== -1) {
         data.users[userIndex].username = name.split(' ')[0].toLowerCase();
         data.users[userIndex].role = role;
@@ -63,12 +64,47 @@ app.post('/api/employees/update', (req, res) => {
   }
 });
 
+function handleImageUpload(reqBody) {
+  if (reqBody.imageBase64) {
+    const matches = reqBody.imageBase64.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    if (matches && matches.length === 3) {
+      const ext = matches[1].split('/')[1] || 'png';
+      const fileName = `upload_${Date.now()}.${ext}`;
+      const filePath = path.join(__dirname, 'public', 'images', fileName);
+      try {
+        fs.writeFileSync(filePath, Buffer.from(matches[2], 'base64'));
+        return `images/${fileName}`;
+      } catch (err) {
+        console.error("Failed to write image:", err);
+      }
+    }
+  }
+  return reqBody.imageUrl;
+}
+
 app.post('/api/dishes', (req, res) => {
   try {
-    const newDish = db.addDish(req.body);
+    const dishData = { ...req.body };
+    dishData.imageUrl = handleImageUpload(req.body) || dishData.imageUrl;
+    const newDish = db.addDish(dishData);
     res.json({ success: true, dish: newDish });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to add dish' });
+  }
+});
+
+app.post('/api/dishes/update', (req, res) => {
+  try {
+    const { dishId, price, stock, name, category } = req.body;
+    const imageUrl = handleImageUpload(req.body);
+    const updated = db.updateDish(dishId, { price, stock, name, category, imageUrl });
+    if (updated) {
+      res.json({ success: true, dish: updated });
+    } else {
+      res.status(404).json({ success: false, message: 'Dish not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to update dish' });
   }
 });
 
@@ -78,6 +114,54 @@ app.post('/api/checkout', (req, res) => {
     res.json({ success: true, bill: newBill });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to process checkout' });
+  }
+});
+
+// User (Role) Management Routes
+app.get('/api/users', (req, res) => {
+  try {
+    const users = db.getUsers();
+    // Do not return passwords for security
+    const safeUsers = users.map(u => ({ id: u.id, username: u.username, role: u.role }));
+    res.json({ success: true, users: safeUsers });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch users' });
+  }
+});
+
+app.post('/api/users', (req, res) => {
+  try {
+    const newUser = db.addUser(req.body);
+    res.json({ success: true, user: { id: newUser.id, username: newUser.username, role: newUser.role } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to add user' });
+  }
+});
+
+app.put('/api/users/:id', (req, res) => {
+  try {
+    const { username, password, role } = req.body;
+    const updated = db.updateUser(req.params.id, { username, password, role });
+    if (updated) {
+      res.json({ success: true, user: { id: updated.id, username: updated.username, role: updated.role } });
+    } else {
+      res.status(404).json({ success: false, message: 'User not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to update user' });
+  }
+});
+
+app.delete('/api/users/:id', (req, res) => {
+  try {
+    const deleted = db.deleteUser(req.params.id);
+    if (deleted) {
+      res.json({ success: true, user: { id: deleted.id, username: deleted.username, role: deleted.role } });
+    } else {
+      res.status(404).json({ success: false, message: 'User not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message || 'Failed to delete user' });
   }
 });
 

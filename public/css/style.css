@@ -165,6 +165,126 @@ body {
   margin-top: 1rem;
 }
 
+/* Role Hint Card on Login */
+.role-hint-card {
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.role-hint-title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.6rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.role-hint-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.role-hint-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.8rem;
+}
+
+.hint-cred {
+  color: var(--text-main);
+  font-size: 0.78rem;
+}
+
+/* Role Badges */
+.role-badge {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+  min-width: 82px;
+  text-align: center;
+  letter-spacing: 0.3px;
+}
+
+.role-admin {
+  background: rgba(128, 0, 0, 0.12);
+  color: #800000;
+  border: 1px solid rgba(128, 0, 0, 0.25);
+}
+
+.role-stock {
+  background: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
+  border: 1px solid rgba(37, 99, 235, 0.2);
+}
+
+.role-cashier {
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+/* Sidebar role badge */
+.sidebar-role-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 20px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  margin-top: 0.2rem;
+  white-space: nowrap;
+}
+
+/* Stock Table inline inputs */
+.stock-input {
+  width: 80px;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  font-family: 'Outfit', sans-serif;
+  background: var(--bg-color);
+  color: var(--text-main);
+  transition: border-color 0.2s;
+}
+
+.stock-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: #fff;
+}
+
+.btn-save-stock {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 0.3rem 0.7rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+  font-family: 'Outfit', sans-serif;
+}
+
+.btn-save-stock:hover {
+  background: var(--primary-hover);
+}
+
+.btn-save-stock:active {
+  transform: scale(0.97);
+}
 
 /* ----------------------------------
    Dashboard Layout
@@ -271,8 +391,8 @@ body {
 
 .user-profile {
   display: flex;
-  align-items: center;
-  gap: 1rem;
+  align-items: flex-start;
+  gap: 0.75rem;
 }
 
 .user-profile img {
@@ -280,16 +400,32 @@ body {
   height: 40px;
   border-radius: 50%;
   object-fit: cover;
+  flex-shrink: 0;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
 }
 
 .user-info h4 {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
 }
 
 .user-info p {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
 }
 
 .btn-outline {
@@ -1167,4 +1303,199 @@ body {
 
 .dropdown-footer a:hover {
   text-decoration: underline;
+}
+
+/* ----------------------------------
+   Stock Badges & Out-of-Stock UI
+---------------------------------- */
+.stock-badge {
+  display: inline-block;
+  padding: 0.18rem 0.5rem;
+  border-radius: 20px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+  letter-spacing: 0.2px;
+}
+
+.stock-badge.ok {
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.stock-badge.low {
+  background: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.stock-badge.out {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.catalog-item-disabled {
+  opacity: 0.55;
+  pointer-events: none;
+  filter: grayscale(0.5);
+}
+
+.catalog-item-disabled button {
+  cursor: not-allowed;
+  background: #f3f4f6 !important;
+  color: #9ca3af !important;
+  border-color: #e5e7eb !important;
+}
+
+/* Toast slide-in animation */
+@keyframes slideInToast {
+  from { transform: translateY(20px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* ----------------------------------
+   Mobile Menu Toggle & Sidebar Drawer
+---------------------------------- */
+.mobile-menu-btn {
+  display: none;
+  background: var(--bg-color);
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-main);
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 150;
+}
+
+.sidebar-backdrop.show {
+  display: block;
+}
+
+/* ----------------------------------
+   Responsive Breakpoints
+---------------------------------- */
+@media (max-width: 1024px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .col-span-3,
+  .col-span-4,
+  .col-span-1 {
+    grid-column: 1 / -1;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    z-index: 200;
+  }
+
+  .sidebar.mobile-open {
+    transform: translateX(0);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .mobile-menu-btn {
+    display: flex;
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+    padding: 0 1rem 1.5rem;
+  }
+
+  .col-span-2 {
+    grid-column: 1 / -1;
+  }
+
+  .top-header {
+    padding: 0 1rem;
+  }
+
+  .header-left {
+    gap: 0.75rem;
+  }
+
+  .back-btn {
+    display: none;
+  }
+
+  .header-right {
+    gap: 0.5rem;
+  }
+
+  .search-bar {
+    width: 120px;
+  }
+
+  .breadcrumbs {
+    display: none;
+  }
+
+  .sub-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem 1rem 0;
+  }
+
+  .time-filters {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .filter-btn {
+    padding: 0.5rem 0.75rem;
+    white-space: nowrap;
+  }
+
+  .login-card {
+    max-width: 100%;
+    margin: 1rem;
+    padding: 2rem 1.5rem;
+  }
+
+  .notification-dropdown {
+    width: min(320px, 90vw);
+  }
+
+  .modal-content {
+    max-width: 90vw;
+    padding: 1.5rem;
+  }
+
+  .card-header {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .catalog-filters {
+    flex-wrap: wrap;
+  }
+
+  .catalog-filters .btn-primary {
+    margin-left: 0 !important;
+    flex: 1 1 100%;
+  }
 }

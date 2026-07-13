@@ -220,11 +220,32 @@ document.addEventListener('DOMContentLoaded', () => {
           <button class="btn-save-stock" onclick="window.saveStockRow(${dish.id})">
             <i class="fa-solid fa-floppy-disk"></i> Save
           </button>
+          <button class="btn-outline" style="padding: 0.35rem 0.6rem; margin-left: 0.5rem; color: #EF4444; border-color: #EF4444;" onclick="window.deleteDish(${dish.id})">
+            <i class="fa-solid fa-trash"></i> Delete
+          </button>
         </td>
       `;
       tbody.appendChild(tr);
     });
   }
+
+  window.deleteDish = async function(dishId) {
+    const dish = dashboardData ? dashboardData.dishes.find(d => d.id === dishId) : null;
+    const label = dish ? `"${dish.name}"` : 'this item';
+    if (!confirm(`Are you sure you want to delete ${label}? This cannot be undone.`)) return;
+
+    const result = await API.deleteDish(dishId);
+    if (result.success) {
+      const data = await API.getDashboardData();
+      if (data) {
+        dashboardData = data;
+        renderStockTable(data.dishes);
+        renderNewViews(data);
+      }
+    } else {
+      alert('Failed to delete item: ' + (result.message || 'Unknown error'));
+    }
+  };
 
   window.saveStockRow = async function(dishId) {
     const priceInput = document.getElementById(`price-input-${dishId}`);
@@ -434,6 +455,13 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       if (timeFilters) timeFilters.style.display = 'none';
     }
+
+    // Mobile cart FAB only makes sense on the ordering screen (CSS also gates it to mobile widths)
+    const mobileCartFab = document.getElementById('mobile-cart-fab');
+    if (mobileCartFab) {
+      mobileCartFab.classList.toggle('hidden', viewId !== 'food-drinks');
+    }
+    if (viewId !== 'food-drinks') closeMobileCart();
   }
 
   navLinks.forEach(link => {
@@ -483,6 +511,32 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   if (sidebarBackdrop) {
     sidebarBackdrop.addEventListener('click', closeMobileSidebar);
+  }
+
+  // -- Mobile Cart Popup (Food & Drinks, mobile layout only) --
+  const cartPanelWrapper = document.getElementById('cart-panel-wrapper');
+  const mobileCartFabBtn = document.getElementById('mobile-cart-fab');
+  const mobileCartCloseBtn = document.getElementById('mobile-cart-close-btn');
+
+  function openMobileCart() {
+    if (cartPanelWrapper) cartPanelWrapper.classList.add('cart-mobile-open');
+  }
+
+  function closeMobileCart() {
+    if (cartPanelWrapper) cartPanelWrapper.classList.remove('cart-mobile-open');
+  }
+
+  if (mobileCartFabBtn) {
+    mobileCartFabBtn.addEventListener('click', openMobileCart);
+  }
+  if (mobileCartCloseBtn) {
+    mobileCartCloseBtn.addEventListener('click', closeMobileCart);
+  }
+  if (cartPanelWrapper) {
+    // Close when tapping the dimmed backdrop, not the card itself
+    cartPanelWrapper.addEventListener('click', (e) => {
+      if (e.target === cartPanelWrapper) closeMobileCart();
+    });
   }
 
   document.getElementById('open-profile-btn').addEventListener('click', () => {
@@ -711,7 +765,7 @@ document.addEventListener('DOMContentLoaded', () => {
         addItemModal.classList.remove('show');
         addItemForm.reset();
       } else {
-        alert('Failed to add item.');
+        alert(result.message || 'Failed to add item.');
       }
     });
   }
@@ -856,6 +910,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
+    showStockToast(`${dish.name} added to order`, 'success');
+
     const existing = cart.find(item => item.id === dishId);
     if (existing) {
       existing.quantity += 1;
@@ -907,21 +963,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const existing = document.getElementById('stock-toast');
     if (existing) existing.remove();
     const colors = {
-      warn:  { bg: '#fef3c7', border: '#f59e0b', text: '#92400e', icon: 'fa-triangle-exclamation' },
-      error: { bg: '#fee2e2', border: '#ef4444', text: '#991b1b', icon: 'fa-circle-xmark' }
+      warn:    { bg: '#fef3c7', border: '#f59e0b', text: '#92400e', icon: 'fa-triangle-exclamation' },
+      error:   { bg: '#fee2e2', border: '#ef4444', text: '#991b1b', icon: 'fa-circle-xmark' },
+      success: { bg: '#d1fae5', border: '#10b981', text: '#065f46', icon: 'fa-circle-check' }
     };
     const c = colors[type] || colors.warn;
     const toast = document.createElement('div');
     toast.id = 'stock-toast';
-    toast.style.cssText = `
-      position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999;
-      background: ${c.bg}; border: 1px solid ${c.border}; color: ${c.text};
-      padding: 0.75rem 1.1rem; border-radius: 10px;
-      font-size: 0.85rem; font-weight: 600;
-      display: flex; align-items: center; gap: 0.5rem;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-      animation: slideInToast 0.25s ease;
-    `;
+    toast.className = 'stock-toast';
+    toast.style.background = c.bg;
+    toast.style.borderColor = c.border;
+    toast.style.color = c.text;
     toast.innerHTML = `<i class="fa-solid ${c.icon}"></i> ${message}`;
     document.body.appendChild(toast);
     setTimeout(() => { if (toast.parentNode) toast.remove(); }, 2800);
@@ -934,6 +986,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const cartTax = document.getElementById('cart-tax');
     const cartTotal = document.getElementById('cart-total');
     const checkoutBtn = document.getElementById('checkout-btn');
+    const fabBadge = document.getElementById('mobile-cart-fab-badge');
+    if (fabBadge) fabBadge.textContent = cart.reduce((sum, item) => sum + item.quantity, 0);
 
     if (cart.length === 0) {
       cartItems.innerHTML = `
@@ -1021,6 +1075,7 @@ document.addEventListener('DOMContentLoaded', () => {
       let tax = subtotal * 0.10;
       let total = subtotal + tax;
       modalPayable.textContent = `Rs. ${total.toFixed(2)}`;
+      closeMobileCart();
       checkoutModal.classList.add('show');
     });
 
@@ -1046,9 +1101,10 @@ document.addEventListener('DOMContentLoaded', () => {
         printReceipt(result.bill, cartCopy);
 
         checkoutModal.classList.remove('show');
+        closeMobileCart();
         cart = [];
         renderCart();
-        
+
         // Refresh application data
         const freshData = await API.getDashboardData();
         if (freshData) {

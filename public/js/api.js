@@ -82,6 +82,12 @@ const LocalPOSDB = {
   },
   addDish(dish) {
     const db = this.getDb();
+
+    const isDuplicate = db.dishes.some(d => d.name.trim().toLowerCase() === String(dish.name).trim().toLowerCase());
+    if (isDuplicate) {
+      throw new Error(`"${dish.name}" already exists in the menu`);
+    }
+
     const maxId = db.dishes.length > 0 ? Math.max(...db.dishes.map(d => d.id)) : 0;
     const newDish = {
       id: maxId + 1,
@@ -95,6 +101,14 @@ const LocalPOSDB = {
     db.dishes.push(newDish);
     this.saveDb(db);
     return newDish;
+  },
+  deleteDish(dishId) {
+    const db = this.getDb();
+    const index = db.dishes.findIndex(d => d.id === Number(dishId));
+    if (index === -1) return null;
+    const deleted = db.dishes.splice(index, 1)[0];
+    this.saveDb(db);
+    return deleted;
   },
   checkout(orderData) {
     const db = this.getDb();
@@ -356,8 +370,12 @@ const API = {
 
   async addDish(dishData) {
     if (useLocalDB) {
-      const dish = LocalPOSDB.addDish(dishData);
-      return { success: true, dish };
+      try {
+        const dish = LocalPOSDB.addDish(dishData);
+        return { success: true, dish };
+      } catch (err) {
+        return { success: false, message: err.message };
+      }
     }
     try {
       const response = await fetch(`${API_BASE}/dishes`, {
@@ -365,13 +383,43 @@ const API = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dishData)
       });
-      if (!response.ok) throw new Error("HTTP " + response.status);
+      // Parse the body even on non-2xx: business errors (e.g. duplicate name)
+      // come back as valid JSON with success:false, not a network failure.
       return await response.json();
     } catch (error) {
       console.warn("API Failover to LocalStorageDB triggered:", error);
       useLocalDB = true;
-      const dish = LocalPOSDB.addDish(dishData);
-      return { success: true, dish };
+      try {
+        const dish = LocalPOSDB.addDish(dishData);
+        return { success: true, dish };
+      } catch (err) {
+        return { success: false, message: err.message };
+      }
+    }
+  },
+
+  async deleteDish(dishId) {
+    if (useLocalDB) {
+      try {
+        const dish = LocalPOSDB.deleteDish(dishId);
+        return dish ? { success: true, dish } : { success: false, message: 'Dish not found' };
+      } catch (err) {
+        return { success: false, message: err.message };
+      }
+    }
+    try {
+      const response = await fetch(`${API_BASE}/dishes/${dishId}`, { method: 'DELETE' });
+      const data = await response.json();
+      if (!response.ok && !data.message) throw new Error("HTTP " + response.status);
+      return data;
+    } catch (error) {
+      useLocalDB = true;
+      try {
+        const dish = LocalPOSDB.deleteDish(dishId);
+        return dish ? { success: true, dish } : { success: false, message: 'Dish not found' };
+      } catch (err) {
+        return { success: false, message: err.message };
+      }
     }
   },
 

@@ -221,7 +221,6 @@
             <div class="card col-span-2">
               <div class="card-header">
                 <h3>Daily Sales</h3>
-                <button class="icon-btn"><i class="fa-solid fa-ellipsis"></i></button>
               </div>
               <div class="chart-container" style="position: relative; height:250px; width:100%">
                 <canvas id="salesChart"></canvas>
@@ -232,9 +231,6 @@
             <div class="card">
               <div class="card-header">
                 <h3>Total Income</h3>
-                <div class="dropdown">
-                  <span>Today</span> <i class="fa-solid fa-chevron-down"></i>
-                </div>
               </div>
               <div class="chart-container donut-container"
                 style="position: relative; height:200px; width:100%; display: flex; justify-content: center; align-items: center;">
@@ -274,9 +270,6 @@
             <div class="card col-span-4">
               <div class="card-header">
                 <h3>Trending Dishes</h3>
-                <div class="dropdown">
-                  <span>Today</span> <i class="fa-solid fa-chevron-down"></i>
-                </div>
               </div>
               <div class="table-container">
                 <table class="data-table" id="dishes-table">
@@ -315,15 +308,18 @@
             </div>
 
             <!-- Right Side: Live Order Sidebar (col-span-1) -->
-            <div class="col-span-1">
+            <div class="col-span-1" id="cart-panel-wrapper">
               <div class="card cart-card"
                 style="height: 100%; min-height: 480px; display: flex; flex-direction: column; padding: 1.25rem;">
                 <div class="card-header"
                   style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; border-radius: 0; background: transparent; padding: 0 0 0.75rem 0;">
                   <h3 style="font-size: 1.05rem; font-weight: 600;"><i class="fa-solid fa-receipt"
                       style="color: var(--primary); margin-right: 0.5rem;"></i> Current Order</h3>
-                  <span class="badge" id="cart-count"
-                    style="background: var(--primary); color: white; padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">0</span>
+                  <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <span class="badge" id="cart-count"
+                      style="background: var(--primary); color: white; padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">0</span>
+                    <button type="button" class="modal-close mobile-cart-close" id="mobile-cart-close-btn"><i class="fa-solid fa-xmark"></i></button>
+                  </div>
                 </div>
                 <div class="cart-items" id="cart-items"
                   style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem; min-height: 200px;">
@@ -471,6 +467,12 @@
       </div> <!-- End Views Container -->
     </main>
   </div>
+
+  <!-- Mobile Cart FAB (mobile layout only, shown on Food & Drinks) -->
+  <button class="mobile-cart-fab hidden" id="mobile-cart-fab">
+    <i class="fa-solid fa-basket-shopping"></i>
+    <span class="mobile-cart-fab-badge" id="mobile-cart-fab-badge">0</span>
+  </button>
 
   <!-- Add Item Modal -->
   <div class="modal-overlay" id="add-item-modal">

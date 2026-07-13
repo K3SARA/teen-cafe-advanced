@@ -1355,6 +1355,33 @@ body {
   to   { transform: translateY(0);    opacity: 1; }
 }
 
+.stock-toast {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 9999;
+  border: 1px solid transparent;
+  padding: 0.75rem 1.1rem;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  animation: slideInToast 0.25s ease;
+}
+
+/* Clear the mobile cart FAB, which sits in the same corner */
+@media (max-width: 1024px) {
+  .stock-toast {
+    bottom: 5.5rem;
+    left: 1rem;
+    right: 1rem;
+    justify-content: center;
+  }
+}
+
 /* ----------------------------------
    Mobile Menu Toggle & Sidebar Drawer
 ---------------------------------- */
@@ -1386,11 +1413,84 @@ body {
 }
 
 /* ----------------------------------
+   Mobile Cart FAB & Popup
+---------------------------------- */
+.mobile-cart-fab {
+  display: none;
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  border: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  box-shadow: var(--shadow-lg);
+  cursor: pointer;
+  z-index: 190;
+}
+
+.mobile-cart-fab-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: white;
+  color: var(--primary);
+  border: 2px solid var(--primary);
+  border-radius: 50%;
+  min-width: 22px;
+  height: 22px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+}
+
+.mobile-cart-close {
+  display: none;
+}
+
+/* ----------------------------------
    Responsive Breakpoints
 ---------------------------------- */
 @media (max-width: 1024px) {
   .dashboard-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .mobile-cart-fab:not(.hidden) {
+    display: flex;
+  }
+
+  #cart-panel-wrapper {
+    display: none;
+  }
+
+  #cart-panel-wrapper.cart-mobile-open {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    align-items: flex-end;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 300;
+    padding: 0;
+  }
+
+  #cart-panel-wrapper.cart-mobile-open .cart-card {
+    width: 100%;
+    max-height: 85vh;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+  }
+
+  #cart-panel-wrapper.cart-mobile-open .mobile-cart-close {
+    display: inline-flex;
   }
 
   .col-span-3,

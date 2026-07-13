@@ -91,8 +91,14 @@ function saveDb(data) {
 
 function addDish(dish) {
   const data = getDb();
+
+  const isDuplicate = data.dishes.some(d => d.name.trim().toLowerCase() === String(dish.name).trim().toLowerCase());
+  if (isDuplicate) {
+    throw new Error(`"${dish.name}" already exists in the menu`);
+  }
+
   const maxId = data.dishes.length > 0 ? Math.max(...data.dishes.map(d => d.id)) : 0;
-  
+
   const newDish = {
     id: maxId + 1,
     name: dish.name,
@@ -102,10 +108,19 @@ function addDish(dish) {
     imageUrl: dish.imageUrl || 'https://images.unsplash.com/photo-1541167760496-1628856ab772?w=100&q=80',
     orders: 0
   };
-  
+
   data.dishes.push(newDish);
   saveDb(data);
   return newDish;
+}
+
+function deleteDish(dishId) {
+  const data = getDb();
+  const index = data.dishes.findIndex(d => d.id === Number(dishId));
+  if (index === -1) return null;
+  const deleted = data.dishes.splice(index, 1)[0];
+  saveDb(data);
+  return deleted;
 }
 
 function createOrder(orderData) {
@@ -363,6 +378,7 @@ module.exports = {
   saveDb,
   addDish,
   updateDish,
+  deleteDish,
   createOrder,
   getDashboardStats,
   getUsers,

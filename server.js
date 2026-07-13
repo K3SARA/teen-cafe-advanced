@@ -89,7 +89,20 @@ app.post('/api/dishes', (req, res) => {
     const newDish = db.addDish(dishData);
     res.json({ success: true, dish: newDish });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to add dish' });
+    res.status(400).json({ success: false, message: error.message || 'Failed to add dish' });
+  }
+});
+
+app.delete('/api/dishes/:id', (req, res) => {
+  try {
+    const deleted = db.deleteDish(req.params.id);
+    if (deleted) {
+      res.json({ success: true, dish: deleted });
+    } else {
+      res.status(404).json({ success: false, message: 'Dish not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message || 'Failed to delete dish' });
   }
 });
 
